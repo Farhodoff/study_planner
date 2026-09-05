@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 // @ts-expect-error JavaScript serverless handler import
-import webhookHandler from '../../../api/telegram/webhook.js';
+import webhookHandler from '../../../api/_telegram/webhook.js';
 // @ts-expect-error JavaScript serverless handler import
-import notifyDailyHandler from '../../../api/telegram/notify-daily.js';
+import notifyDailyHandler from '../../../api/_telegram/notify-daily.js';
 import telegramService from '../TelegramService';
 
 // Mock Supabase

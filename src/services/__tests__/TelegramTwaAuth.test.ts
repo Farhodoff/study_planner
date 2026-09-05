@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import crypto from 'crypto';
 // @ts-ignore
-import twaHandler, { verifyTelegramWebAppData } from '../../../api/telegram/auth-twa.js';
+import twaHandler, { verifyTelegramWebAppData } from '../../../api/_telegram/auth-twa.js';
 
 // Mock Supabase client
 vi.mock('@supabase/supabase-js', () => ({
