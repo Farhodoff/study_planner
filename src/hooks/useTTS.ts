@@ -1,6 +1,29 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { trackTTSTelemetry } from '../lib/errorTracking';
 import { cleanJapaneseTTS } from '../utils/ai';
+import { supabase } from '../lib/supabase';
+
+// Cached access token to avoid calling getSession() repeatedly on every sentence chunk
+let cachedAuthToken: string | null = null;
+let lastTokenFetchTime = 0;
+
+async function getAuthToken(): Promise<string> {
+  const now = Date.now();
+  if (cachedAuthToken && now - lastTokenFetchTime < 60000) {
+    return cachedAuthToken;
+  }
+  try {
+    if (typeof supabase?.auth?.getSession === 'function') {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.access_token) {
+        cachedAuthToken = data.session.access_token;
+        lastTokenFetchTime = now;
+        return cachedAuthToken;
+      }
+    }
+  } catch {}
+  return import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_6g0Ei_1Cw46e1mJLKj_1Ug_sOmhlgoI';
+}
 
 // High-speed In-Memory Audio Cache for 0ms TTS playback on repeated or prefetched text
 const TTS_AUDIO_CACHE = new Map<string, Blob>();
@@ -254,8 +277,7 @@ export async function fetchTTSAudioBlob(text: string, lang: 'ja' | 'en'): Promis
 
   const fetchPromise = (async (): Promise<Blob | null> => {
     try {
-      const token =
-        import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_6g0Ei_1Cw46e1mJLKj_1Ug_sOmhlgoI';
+      const token = await getAuthToken();
 
       const response = await fetch('/api/tts', {
         method: 'POST',
@@ -577,48 +599,54 @@ export const useTTS = ({
   /**
    * Plays a single clause/sentence via Network Google TTS with Web Audio API fallback.
    */
+  /**
+   * Plays a single clause/sentence via Network Google TTS with Web Audio API fallback.
+   * Returns true if audio was successfully fetched and played, false otherwise.
+   */
   const playNetworkClause = useCallback(
-    async (clause: string, isJa: boolean): Promise<void> => {
-      if (isCancelledRef.current) return;
+    async (clause: string, isJa: boolean): Promise<boolean> => {
+      if (isCancelledRef.current) return false;
       const blob = await fetchTTSAudioBlob(clause, isJa ? 'ja' : 'en');
-      if (isCancelledRef.current || !blob) return;
+      if (isCancelledRef.current || !blob) return false;
       await playAudioBlob(blob);
+      return true;
     },
     [playAudioBlob],
   );
 
   /**
-   * Plays a single clause: For Japanese, ALWAYS use Network Google TTS first
-   * to guarantee audio works even with active microphone or absent voice packs.
+   * Plays a single clause: Prioritizes High-Quality Network Google TTS,
+   * but seamlessly falls back to native browser SpeechSynthesis if network fails.
    */
   const playSingleClause = useCallback(
     async (clause: string, isJa: boolean): Promise<void> => {
       if (isCancelledRef.current) return;
 
-      // For Japanese, ALWAYS use High-Quality Network Google TTS first.
-      // Native SpeechSynthesis in Chromium has severe silent-hang bugs (12+ seconds delay)
-      // and robotic pronunciation.
-      if (isJa) {
-        try {
-          await playNetworkClause(clause, true);
-          return;
-        } catch (netErr) {
-          console.warn('[useTTS] Network TTS failed:', netErr);
-          return;
-        }
+      // 1. Try High-Quality Network Google TTS first (works for both ja and en)
+      try {
+        const played = await playNetworkClause(clause, isJa);
+        if (played) return;
+        console.warn(
+          `[useTTS] Network TTS unavailable for "${clause.substring(0, 25)}...", falling back to browser SpeechSynthesis`,
+        );
+      } catch (netErr) {
+        console.warn('[useTTS] Network TTS failed:', netErr);
       }
 
+      // 2. Native SpeechSynthesis Fallback
       const synth =
         synthRef.current || (typeof window !== 'undefined' ? window.speechSynthesis : null);
+      if (!synth) return;
+
       let currentVoices = voicesRef.current;
-      if (synth && (!currentVoices || currentVoices.length === 0)) {
+      if (!currentVoices || currentVoices.length === 0) {
         try {
           currentVoices = synth.getVoices() || [];
           voicesRef.current = currentVoices;
         } catch {}
       }
 
-      if (synth && (!currentVoices || currentVoices.length === 0)) {
+      if (!currentVoices || currentVoices.length === 0) {
         await new Promise<void>((r) => {
           let resolved = false;
           const onVoices = () => {
@@ -644,20 +672,6 @@ export const useTTS = ({
         });
       }
 
-      const hasLanguageVoice = (currentVoices || []).some((v) =>
-        v.lang.toLowerCase().startsWith('en'),
-      );
-
-      if (!synth || !hasLanguageVoice) {
-        try {
-          await playNetworkClause(clause, isJa);
-          return;
-        } catch (netErr) {
-          console.warn('[useTTS] Network TTS failed:', netErr);
-          return;
-        }
-      }
-
       const selectedVoice = selectBestVoice(currentVoices, isJa);
 
       try {
@@ -671,35 +685,30 @@ export const useTTS = ({
         }
 
         let isFinished = false;
-        let speakStartTime = 0;
         let hasStarted = false;
 
         let startWatchdog: ReturnType<typeof setTimeout> | null = null;
         let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
 
-        const finish = (fn?: () => void) => {
+        const finish = () => {
           if (isFinished) return;
           isFinished = true;
           if (startWatchdog) clearTimeout(startWatchdog);
           if (watchdogTimer) clearTimeout(watchdogTimer);
           activeUtteranceRef.current = null;
-          if (fn) fn();
           resolve();
         };
 
-        // Fast 800ms start watchdog: if native speech synthesis hasn't fired onstart within 800ms,
-        // it is hung due to Chromium background/navigation state. Fallback immediately to Network TTS.
+        // Fast 800ms start watchdog: if native speech synthesis hasn't fired onstart within 800ms, finish
         startWatchdog = setTimeout(() => {
           if (!hasStarted && !isFinished) {
             console.warn(
-              '[useTTS] Native speech failed to start within 800ms, fast fallback to Network TTS.',
+              '[useTTS] Native speech failed to start within 800ms, finishing gracefully.',
             );
             try {
               synth.cancel();
             } catch {}
-            finish(() => {
-              playNetworkClause(clause, isJa).catch(() => {});
-            });
+            finish();
           }
         }, 800);
 
@@ -707,14 +716,12 @@ export const useTTS = ({
         watchdogTimer = setTimeout(() => {
           if (!isFinished) {
             console.warn(
-              `[useTTS] Web Speech hang detected (${maxDurationMs}ms), fallback to Network TTS.`,
+              `[useTTS] Web Speech hang detected (${maxDurationMs}ms), finishing gracefully.`,
             );
             try {
               synth.cancel();
             } catch {}
-            finish(() => {
-              playNetworkClause(clause, isJa).catch(() => {});
-            });
+            finish();
           }
         }, maxDurationMs);
 
@@ -736,20 +743,9 @@ export const useTTS = ({
           utterance.onstart = () => {
             hasStarted = true;
             if (startWatchdog) clearTimeout(startWatchdog);
-            speakStartTime = Date.now();
           };
 
           utterance.onend = () => {
-            const elapsed = speakStartTime > 0 ? Date.now() - speakStartTime : 0;
-            if (clause.length > 3 && (speakStartTime === 0 || elapsed < 120)) {
-              console.warn(
-                `[useTTS] Web Speech skipped (${elapsed}ms, started=${speakStartTime > 0}), falling back to Network TTS.`,
-              );
-              playNetworkClause(clause, isJa)
-                .then(() => finish())
-                .catch(() => finish());
-              return;
-            }
             finish();
           };
 
@@ -762,17 +758,13 @@ export const useTTS = ({
               finish();
               return;
             }
-            playNetworkClause(clause, isJa)
-              .then(() => finish())
-              .catch(() => finish());
+            finish();
           };
 
           synth.speak(utterance);
           if (synth.paused) synth.resume();
         } catch {
-          playNetworkClause(clause, isJa)
-            .then(() => finish())
-            .catch(() => finish());
+          finish();
         }
       });
     },
@@ -944,6 +936,11 @@ export const useTTS = ({
               `[useTTS] Chunk ${i + 1}/${chunks.length} playback started at +${Date.now() - startTime}ms: "${chunks[i].substring(0, 30)}..."`,
             );
             await playAudioBlob(blob);
+          } else {
+            console.warn(
+              `[useTTS] Network chunk ${i + 1} unavailable, fallback to browser SpeechSynthesis: "${chunks[i].substring(0, 30)}..."`,
+            );
+            await playSingleClause(chunks[i], isJa);
           }
         }
       } else {

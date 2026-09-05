@@ -405,43 +405,15 @@ const SpeakingCoachPage: React.FC = () => {
     },
   });
 
-  // Warm-cache prefetch active coach greeting immediately (0ms start), then stagger other personas
+  // Warm-cache prefetch active coach greeting only (0ms start)
   useEffect(() => {
-    // 1. Immediately prefetch the active persona greeting (top priority)
-    const activeGreeting = getCoachInitialGreeting(language, persona);
-    if (activeGreeting) {
-      fetchTTSAudioBlob(activeGreeting, language).catch(() => {});
+    if (!activeScenario) {
+      const activeGreeting = getCoachInitialGreeting(language, persona);
+      if (activeGreeting) {
+        fetchTTSAudioBlob(activeGreeting, language).catch(() => {});
+      }
     }
-
-    // 2. Stagger background caching for other personas to prevent saturating the network or serverless limits
-    const allPersonas: CoachPersona[] = [
-      'roast',
-      'gentle',
-      'ielts',
-      'interview',
-      'travel',
-      'casual',
-    ];
-    const otherPersonas = allPersonas.filter((p) => p !== persona);
-
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-    otherPersonas.forEach((p, index) => {
-      const timer = setTimeout(
-        () => {
-          const greetingText = getCoachInitialGreeting(language, p);
-          if (greetingText) {
-            fetchTTSAudioBlob(greetingText, language).catch(() => {});
-          }
-        },
-        800 + index * 600,
-      );
-      timeouts.push(timer);
-    });
-
-    return () => {
-      timeouts.forEach(clearTimeout);
-    };
-  }, [language, persona]);
+  }, [language, persona, activeScenario]);
 
   // Handle Scenario selection / loading and auto-speaking opening line with 0ms delay
   useEffect(() => {

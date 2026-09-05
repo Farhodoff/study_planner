@@ -110,8 +110,8 @@ export default async function handler(req) {
     userRole = user.role || 'user';
   }
 
-  // 3. Distributed Rate Limiter
-  const rateCheck = await checkRateLimit(req, authenticatedUserId);
+  // 3. Distributed Rate Limiter (80 req/min for conversational dialogue chunk streaming)
+  const rateCheck = await checkRateLimit(req, authenticatedUserId, 80);
   if (!rateCheck.allowed) {
     return new Response(
       JSON.stringify({

@@ -32,7 +32,7 @@ function checkLocalFallback(store, key, maxLimit) {
  * Executes an atomic sliding/fixed window rate limit check.
  * Uses Upstash Redis pipeline via native fetch if env vars exist.
  */
-export async function checkRateLimit(req, userId = null) {
+export async function checkRateLimit(req, userId = null, customMaxLimit = null) {
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -46,7 +46,10 @@ export async function checkRateLimit(req, userId = null) {
   clientIp = clientIp.split(',')[0].trim();
 
   const rateLimitKey = userId ? `ratelimit:user:${userId}` : `ratelimit:ip:${clientIp}`;
-  const maxLimit = userId ? MAX_REQUESTS_PER_WINDOW : Math.floor(MAX_REQUESTS_PER_WINDOW / 2);
+  const maxLimit =
+    customMaxLimit !== null
+      ? (userId ? customMaxLimit : Math.max(30, Math.floor(customMaxLimit / 2)))
+      : (userId ? MAX_REQUESTS_PER_WINDOW : Math.floor(MAX_REQUESTS_PER_WINDOW / 2));
 
   // 1. If Upstash Redis is configured, execute atomic distributed INCR + EXPIRE
   if (redisUrl && redisToken) {
