@@ -10,8 +10,9 @@ const SERVICE_ROLE = process.env.SERVICE_ROLE || process.env.SUPABASE_SERVICE_RO
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 // Primary superadmin contact for feedback notifications
+const admin = 6756073816; // Superadmin Farhod Soyilov (@Soyilov_Farhod)
 const SUPERADMIN_EMAIL = 'fsoyilov@gmail.com';
-const FALLBACK_SUPERADMIN_CHAT_ID = 6756073816; // Farhod Soyilov (@Soyilov_Farhod)
+const FALLBACK_SUPERADMIN_CHAT_ID = admin;
 // Explicit exclusion of non-admin student/test chat IDs to prevent feedback broadcast
 const EXCLUDED_NON_ADMIN_CHAT_IDS = new Set([6839776532]);
 
@@ -189,7 +190,7 @@ export default async function handler(req, res) {
 
   // Fallback: strictly default to verified superadmin chat ID if none resolved
   if (targetChatIds.size === 0) {
-    targetChatIds.add(FALLBACK_SUPERADMIN_CHAT_ID);
+    targetChatIds.add(admin);
   }
 
   // 6. Format Telegram Notification Message
