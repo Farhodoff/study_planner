@@ -1,11 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-// @ts-expect-error JavaScript serverless handler import
 import webhookHandler from '../../../api/_telegram/webhook.js';
-// @ts-expect-error JavaScript serverless handler import
 import dispatchGroupBattleHandler, {
   sendGroupPoll,
 } from '../../../api/_telegram/dispatch-group-battle.js';
-// @ts-expect-error JavaScript questions bank import
 import {
   BATTLE_QUESTIONS,
   getRandomBattleQuestion,
