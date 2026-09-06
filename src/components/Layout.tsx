@@ -58,6 +58,8 @@ const Layout: React.FC = () => {
   const closeRatingModal = useRatingModalStore((s) => s.closeModal);
   const openRatingModal = useRatingModalStore((s) => s.openModal);
   const submitRatingReview = useRatingModalStore((s) => s.submitReview);
+  const initialRating = useRatingModalStore((s) => s.initialRating);
+  const initialCategory = useRatingModalStore((s) => s.initialCategory);
 
   // Global Keyboard Shortcuts (Cmd/Ctrl+K for Quick Command Palette)
   useEffect(() => {
@@ -265,7 +267,7 @@ const Layout: React.FC = () => {
 
           <button
             type="button"
-            onClick={openRatingModal}
+            onClick={() => openRatingModal()}
             className="flex items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10 p-1.5 text-amber-500 transition hover:bg-amber-500/20 active:scale-95"
             title={language === 'ja' ? '評価' : 'Baholash'}
           >
@@ -378,7 +380,7 @@ const Layout: React.FC = () => {
           {/* Quick Rate App & Feedback Button */}
           <button
             type="button"
-            onClick={openRatingModal}
+            onClick={() => openRatingModal()}
             className={`flex w-full items-center ${isCollapsed ? 'justify-center' : ''} gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-600 shadow-xs transition-all hover:bg-amber-500/20 active:scale-95 dark:text-amber-400`}
             title={language === 'ja' ? 'アプリを評価・フィードバック' : 'Ilovani baholash (5★)'}
           >
@@ -554,6 +556,8 @@ const Layout: React.FC = () => {
         onClose={closeRatingModal}
         onSubmit={submitRatingReview}
         isSubmitting={isRatingSubmitting}
+        initialRating={initialRating}
+        initialCategory={initialCategory}
       />
     </div>
   );

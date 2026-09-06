@@ -16,6 +16,8 @@ export interface RatingReviewModalProps {
     };
   }) => Promise<{ success: boolean; message?: string; error?: string }>;
   isSubmitting?: boolean;
+  initialRating?: number;
+  initialCategory?: string;
 }
 
 const CATEGORIES = [
@@ -39,12 +41,14 @@ export const RatingReviewModal: React.FC<RatingReviewModalProps> = ({
   onClose,
   onSubmit,
   isSubmitting = false,
+  initialRating = 5,
+  initialCategory = 'general',
 }) => {
   const user = useAuthStore((s) => s.user);
-  const [rating, setRating] = useState<number>(5);
+  const [rating, setRating] = useState<number>(initialRating);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
-  const [category, setCategory] = useState('general');
+  const [category, setCategory] = useState(initialCategory);
   const [contactName, setContactName] = useState('');
   const [telegramUsername, setTelegramUsername] = useState('');
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -56,17 +60,17 @@ export const RatingReviewModal: React.FC<RatingReviewModalProps> = ({
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setRating(5);
+      setRating(initialRating || 5);
       setHoveredRating(null);
       setComment('');
-      setCategory('general');
+      setCategory(initialCategory || 'general');
       setErrorText(null);
       setIsSuccess(false);
       if (user) {
         setContactName(user.user_metadata?.full_name || user.user_metadata?.name || '');
       }
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, initialRating, initialCategory]);
 
   // Handle ESC key to close
   useEffect(() => {

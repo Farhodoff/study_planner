@@ -25,7 +25,9 @@ export interface ReviewSubmitParams {
 export interface RatingModalState {
   isOpen: boolean;
   isSubmitting: boolean;
-  openModal: () => void;
+  initialRating?: number;
+  initialCategory?: string;
+  openModal: (options?: { rating?: number; category?: string } | unknown) => void;
   closeModal: () => void;
   recordMilestone: () => void;
   submitReview: (
@@ -36,7 +38,26 @@ export interface RatingModalState {
 export const useRatingModalStore = create<RatingModalState>((set) => ({
   isOpen: false,
   isSubmitting: false,
-  openModal: () => set({ isOpen: true }),
+  initialRating: 5,
+  initialCategory: 'general',
+  openModal: (options?: { rating?: number; category?: string } | unknown) =>
+    set({
+      isOpen: true,
+      initialRating:
+        options &&
+        typeof options === 'object' &&
+        'rating' in options &&
+        typeof (options as any).rating === 'number'
+          ? (options as any).rating
+          : 5,
+      initialCategory:
+        options &&
+        typeof options === 'object' &&
+        'category' in options &&
+        typeof (options as any).category === 'string'
+          ? (options as any).category
+          : 'general',
+    }),
   closeModal: () => {
     set({ isOpen: false });
     safeLocalStorage.setItem(STORAGE_KEYS.DISMISSED_AT, Date.now().toString());

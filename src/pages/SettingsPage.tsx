@@ -209,7 +209,7 @@ const SettingsPage: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={openRatingModal}
+          onClick={() => openRatingModal()}
           className="flex shrink-0 items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-amber-500/25 transition hover:brightness-105 active:scale-95"
         >
           <Star className="h-4 w-4 fill-white" />
