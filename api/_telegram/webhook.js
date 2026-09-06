@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { getRandomBattleQuestion } from './battle-questions.js';
+import { sendGroupPoll } from './dispatch-group-battle.js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qmuimxnknxwarvnkpnlo.supabase.co';
 const SERVICE_ROLE = process.env.SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -154,6 +156,134 @@ export default async function handler(req, res) {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   try {
+    // 0. Handle Group Membership Updates (Bot added to or removed from group)
+    if (update.my_chat_member) {
+      const mcm = update.my_chat_member;
+      const chat = mcm.chat;
+      const newStatus = mcm.new_chat_member?.status;
+      const isGroup = ['group', 'supergroup'].includes(chat?.type);
+
+      if (isGroup && chat?.id) {
+        if (['member', 'administrator'].includes(newStatus)) {
+          // Register / activate group in telegram_groups
+          await supabase.from('telegram_groups').upsert({
+            chat_id: chat.id,
+            title: chat.title || 'JLPT Study Group',
+            chat_type: chat.type,
+            is_active: true,
+            interval_hours: 2,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'chat_id' });
+
+          const welcomeText =
+            `🎌 <b>JLPT Quiz Battle Guruhga Xush Kelibsiz!</b> ⚔️\n\n` +
+            `Men <b>Nihon Talk</b> botiman. Ushbu guruhda talabalar o'rtasida JLPT (N5 - N2) bilimi bo'yicha jonli viktorina boshlandi!\n\n` +
+            `⚡ <b>Imkoniyatlar:</b>\n` +
+            `• Har 2 soatda bot avtomatik yangi JLPT savolini tashlaydi.\n` +
+            `• To'g'ri javob bergan ishtirokchilar <b>+10 XP</b> oladi!\n` +
+            `• /top yoki /reyting — guruh yetakchilar reytingi\n` +
+            `• /battle yoki /quiz — navbatsiz yangi savol tashlash\n` +
+            `• /start_battle va /stop_battle — avto-savollarni yoqish/to'xtatish\n\n` +
+            `<i>Birinchi savol quyida yo'llanmoqda, barchaga omad! 🔥</i>`;
+
+          await sendTelegramMessage(chat.id, welcomeText, null);
+
+          // Immediately send 1st Quiz Poll
+          const q = getRandomBattleQuestion();
+          const pollRes = await sendGroupPoll(chat.id, q.question, q.options, q.correct, q.explanation);
+          if (pollRes?.ok && pollRes.result?.poll?.id) {
+            await supabase.from('telegram_group_polls').insert({
+              poll_id: pollRes.result.poll.id,
+              chat_id: chat.id,
+              question_id: q.id,
+              correct_option_id: q.correct,
+              explanation: q.explanation,
+              created_at: new Date().toISOString(),
+            });
+
+            await supabase
+              .from('telegram_groups')
+              .update({
+                last_quiz_at: new Date().toISOString(),
+                total_quizzes_sent: 1,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('chat_id', chat.id);
+          }
+          return res.status(200).json({ ok: true });
+        } else if (['left', 'kicked'].includes(newStatus)) {
+          // Deactivate group
+          await supabase
+            .from('telegram_groups')
+            .update({
+              is_active: false,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('chat_id', chat.id);
+          return res.status(200).json({ ok: true });
+        }
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    // 0.1 Handle Poll Answers (Group Quiz Voting)
+    if (update.poll_answer) {
+      const pa = update.poll_answer;
+      const pollId = pa.poll_id;
+      const user = pa.user;
+      const chosenOption = pa.option_ids?.[0];
+
+      if (pollId && user && chosenOption !== undefined) {
+        // Find matching group poll
+        const { data: pollRecord } = await supabase
+          .from('telegram_group_polls')
+          .select('*')
+          .eq('poll_id', pollId)
+          .maybeSingle();
+
+        if (pollRecord) {
+          const isCorrect = chosenOption === pollRecord.correct_option_id;
+          const points = isCorrect ? 10 : 0;
+          const userName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || 'Talaba';
+
+          const { data: existingScore } = await supabase
+            .from('telegram_group_scores')
+            .select('*')
+            .eq('chat_id', pollRecord.chat_id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (existingScore) {
+            await supabase
+              .from('telegram_group_scores')
+              .update({
+                score: (existingScore.score || 0) + points,
+                correct_count: (existingScore.correct_count || 0) + (isCorrect ? 1 : 0),
+                total_answered: (existingScore.total_answered || 0) + 1,
+                user_name: userName,
+                username: user.username || existingScore.username || null,
+                last_answered_at: new Date().toISOString(),
+              })
+              .eq('id', existingScore.id);
+          } else {
+            await supabase
+              .from('telegram_group_scores')
+              .insert({
+                chat_id: pollRecord.chat_id,
+                user_id: user.id,
+                user_name: userName,
+                username: user.username || null,
+                score: points,
+                correct_count: isCorrect ? 1 : 0,
+                total_answered: 1,
+                last_answered_at: new Date().toISOString(),
+              });
+          }
+        }
+      }
+      return res.status(200).json({ ok: true });
+    }
+
     // 1. Handle Callback Queries (Inline Buttons)
     if (update.callback_query) {
       const cb = update.callback_query;
@@ -203,11 +333,134 @@ export default async function handler(req, res) {
     }
 
     const chatId = message.chat.id;
+    const isGroup = ['group', 'supergroup'].includes(message.chat.type);
     const text = message.text.trim();
     const telegramId = message.from?.id;
     const username = message.from?.username || '';
     const firstName = message.from?.first_name || '';
     const lastName = message.from?.last_name || '';
+    const cleanCommand = text.split(' ')[0].toLowerCase().split('@')[0];
+
+    // --- Group JLPT Quiz Battle Commands ---
+    // 1. /battle or /quiz in group: Drop native quiz poll
+    if (cleanCommand === '/battle' || (isGroup && (cleanCommand === '/quiz' || text.includes('Quiz')))) {
+      const q = getRandomBattleQuestion();
+      const pollRes = await sendGroupPoll(chatId, q.question, q.options, q.correct, q.explanation);
+      if (pollRes?.ok && pollRes.result?.poll?.id) {
+        await supabase.from('telegram_group_polls').insert({
+          poll_id: pollRes.result.poll.id,
+          chat_id: chatId,
+          question_id: q.id,
+          correct_option_id: q.correct,
+          explanation: q.explanation,
+          created_at: new Date().toISOString(),
+        });
+
+        await supabase.from('telegram_groups').upsert({
+          chat_id: chatId,
+          title: message.chat.title || 'Guruh',
+          chat_type: message.chat.type,
+          is_active: true,
+          last_quiz_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'chat_id' });
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    // 2. Leaderboard: /top, /reyting, /leaderboard
+    if (cleanCommand === '/top' || cleanCommand === '/reyting' || cleanCommand === '/leaderboard') {
+      const { data: topUsers } = await supabase
+        .from('telegram_group_scores')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('score', { ascending: false })
+        .order('correct_count', { ascending: false })
+        .limit(10);
+
+      if (!topUsers || topUsers.length === 0) {
+        await sendTelegramMessage(
+          chatId,
+          `🏆 <b>Guruh JLPT Quiz Battle Reytingi:</b>\n\nHozircha hech kim savollarga javob bermagan.\nSavol tashlash uchun: /battle\nTo'g'ri javob bering va 1-o'ringa chiqing! ⚔️`,
+          null
+        );
+        return res.status(200).json({ ok: true });
+      }
+
+      const medalIcons = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+      const lines = topUsers.map((u, idx) => {
+        const medal = medalIcons[idx] || `${idx + 1}.`;
+        const name = escapeHTML(u.user_name || (u.username ? `@${u.username}` : 'Talaba'));
+        const tag = u.username ? ` (@${escapeHTML(u.username)})` : '';
+        const pct = u.total_answered > 0 ? Math.round((u.correct_count / u.total_answered) * 100) : 0;
+        return `${medal} <b>${name}</b>${tag}\n    └ <b>${u.score} XP</b> | ${u.correct_count}/${u.total_answered} to'g'ri (${pct}%)`;
+      });
+
+      const topText =
+        `🏆 <b>Guruh JLPT Quiz Battle — TOP 10 Yetakchilar:</b>\n\n` +
+        lines.join('\n\n') +
+        `\n\n⚔️ <i>To'g'ri javob: +10 XP</i>\n` +
+        `🎲 Yangi savol: /battle`;
+
+      await sendTelegramMessage(chatId, topText, null);
+      return res.status(200).json({ ok: true });
+    }
+
+    // 3. /start_battle
+    if (cleanCommand === '/start_battle') {
+      await supabase.from('telegram_groups').upsert({
+        chat_id: chatId,
+        title: message.chat.title || 'Guruh',
+        chat_type: message.chat.type,
+        is_active: true,
+        interval_hours: 2,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'chat_id' });
+
+      await sendTelegramMessage(
+        chatId,
+        `⚔️ <b>JLPT Quiz Battle faollashtirildi!</b>\n\n✅ Bot har 2 soatda avtomatik savol tashlab turadi.\n\n• /battle — Navbatsiz yangi savol\n• /top — Guruh reytingi\n• /stop_battle — Avto-savollarni to'xtatish`,
+        null
+      );
+      return res.status(200).json({ ok: true });
+    }
+
+    // 4. /stop_battle
+    if (cleanCommand === '/stop_battle') {
+      await supabase
+        .from('telegram_groups')
+        .update({
+          is_active: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('chat_id', chatId);
+
+      await sendTelegramMessage(
+        chatId,
+        `⏸️ <b>JLPT Quiz Battle avtomatik savollari to'xtatildi.</b>\n\nQayta yoqish uchun: /start_battle yozing.`,
+        null
+      );
+      return res.status(200).json({ ok: true });
+    }
+
+    // 5. /battle_help or /help in group
+    if (cleanCommand === '/battle_help' || (isGroup && (cleanCommand === '/help' || text.includes('Yordam')))) {
+      const battleHelpText =
+        `⚔️ <b>JLPT Quiz Battle Buyruqlari:</b>\n\n` +
+        `• /battle — Yangi JLPT savolini navbatsiz tashlash\n` +
+        `• /top yoki /reyting — Guruhning TOP 10 reyting jadvali\n` +
+        `• /start_battle — Har 2 soatda avtomatik savol yuborishni yoqish\n` +
+        `• /stop_battle — Avtomatik savollarni to'xtatish\n` +
+        `• /battle_help — Ushbu yordam xabari\n\n` +
+        `🚀 <b>Nihon Talk Mini App:</b> https://nihon-talk.vercel.app/twa`;
+      await sendTelegramMessage(chatId, battleHelpText, null);
+      return res.status(200).json({ ok: true });
+    }
+
+    // 6. In groups, ignore any other text messages quietly to avoid spamming the group
+    if (isGroup) {
+      return res.status(200).json({ ok: true });
+    }
 
     // A. Handle /start <code> or /start
     if (text.startsWith('/start')) {

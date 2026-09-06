@@ -7,6 +7,7 @@ import checkLinkHandler from './_telegram/check-link.js';
 import unlinkHandler from './_telegram/unlink.js';
 import toggleNotificationsHandler from './_telegram/toggle-notifications.js';
 import sendTestHandler from './_telegram/send-test.js';
+import dispatchGroupBattleHandler from './_telegram/dispatch-group-battle.js';
 
 export default async function handler(req, res) {
   const url = req.url || '';
@@ -22,6 +23,9 @@ export default async function handler(req, res) {
   }
   if (url.includes('dispatch-daily-dataset')) {
     return dispatchDailyHandler(req, res);
+  }
+  if (url.includes('dispatch-group-battle')) {
+    return dispatchGroupBattleHandler(req, res);
   }
   if (url.includes('generate-code')) {
     return generateCodeHandler(req, res);
