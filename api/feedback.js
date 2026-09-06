@@ -9,8 +9,11 @@ const SUPABASE_URL =
 const SERVICE_ROLE = process.env.SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
-// Default superadmin telegram chat IDs as reliable fallback
-const DEFAULT_ADMIN_CHAT_IDS = [6839776532, 6756073816];
+// Primary superadmin contact for feedback notifications
+const SUPERADMIN_EMAIL = 'fsoyilov@gmail.com';
+const FALLBACK_SUPERADMIN_CHAT_ID = 6756073816; // Farhod Soyilov (@Soyilov_Farhod)
+// Explicit exclusion of non-admin student/test chat IDs to prevent feedback broadcast
+const EXCLUDED_NON_ADMIN_CHAT_IDS = new Set([6839776532]);
 
 function escapeHTML(str) {
   if (!str) return '';
@@ -131,43 +134,62 @@ export default async function handler(req, res) {
     }
   }
 
-  // 5. Gather Telegram Admin Chat IDs
-  const targetChatIds = new Set(DEFAULT_ADMIN_CHAT_IDS);
+  // 5. Gather Telegram Admin Chat IDs (Strictly Superadmin only)
+  const targetChatIds = new Set();
 
-  // If env variable TELEGRAM_ADMIN_CHAT_ID is present, add it
+  // If env variable TELEGRAM_ADMIN_CHAT_ID is present, add it if valid and not excluded
   if (process.env.TELEGRAM_ADMIN_CHAT_ID) {
     const envIds = process.env.TELEGRAM_ADMIN_CHAT_ID.split(',').map((id) => id.trim());
     for (const id of envIds) {
       const numId = Number(id);
-      if (!isNaN(numId) && numId !== 0) targetChatIds.add(numId);
+      if (!isNaN(numId) && numId > 0 && !EXCLUDED_NON_ADMIN_CHAT_IDS.has(numId)) {
+        targetChatIds.add(numId);
+      }
     }
   }
 
-  // Query superadmins/admins from database if possible
+  // Query database strictly for the verified superadmin (fsoyilov@gmail.com / role=superadmin)
   if (SERVICE_ROLE) {
     try {
       const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
       const { data: adminProfiles } = await supabase
         .from('profiles')
-        .select('id')
-        .in('role', ['admin', 'superadmin']);
+        .select('id, email, role')
+        .or(`email.eq.${SUPERADMIN_EMAIL},role.eq.superadmin`);
 
       if (adminProfiles && adminProfiles.length > 0) {
-        const adminUserIds = adminProfiles.map((p) => p.id);
-        const { data: telegramAdmins } = await supabase
-          .from('telegram_users')
-          .select('chat_id')
-          .in('user_id', adminUserIds);
+        const verifiedAdminIds = adminProfiles
+          .filter(
+            (p) =>
+              p.email?.toLowerCase().trim() === SUPERADMIN_EMAIL.toLowerCase() ||
+              p.role === 'superadmin',
+          )
+          .map((p) => p.id);
 
-        if (telegramAdmins) {
-          for (const ta of telegramAdmins) {
-            if (ta.chat_id) targetChatIds.add(Number(ta.chat_id));
+        if (verifiedAdminIds.length > 0) {
+          const { data: telegramAdmins } = await supabase
+            .from('telegram_users')
+            .select('chat_id')
+            .in('user_id', verifiedAdminIds);
+
+          if (telegramAdmins && telegramAdmins.length > 0) {
+            for (const ta of telegramAdmins) {
+              const numId = Number(ta.chat_id);
+              if (!isNaN(numId) && numId > 0 && !EXCLUDED_NON_ADMIN_CHAT_IDS.has(numId)) {
+                targetChatIds.add(numId);
+              }
+            }
           }
         }
       }
     } catch (queryErr) {
-      console.warn('[Feedback] Admin lookup warning:', queryErr?.message);
+      console.warn('[Feedback] Superadmin lookup warning:', queryErr?.message);
     }
+  }
+
+  // Fallback: strictly default to verified superadmin chat ID if none resolved
+  if (targetChatIds.size === 0) {
+    targetChatIds.add(FALLBACK_SUPERADMIN_CHAT_ID);
   }
 
   // 6. Format Telegram Notification Message
