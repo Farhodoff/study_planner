@@ -35,12 +35,13 @@ function getRatingStars(rating) {
 }
 
 async function sendTelegramMessage(chatId, text) {
-  if (!TELEGRAM_BOT_TOKEN) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN;
+  if (!botToken) {
     console.warn('[Feedback] TELEGRAM_BOT_TOKEN is missing');
     return { ok: false, error: 'Bot token missing' };
   }
   try {
-    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
