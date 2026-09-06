@@ -9,7 +9,7 @@ import type { User, Session } from '@supabase/supabase-js';
  * Set PUBLIC_PREVIEW_MODE = true to open the preview.
  * Set PUBLIC_PREVIEW_MODE = false to restore normal production authentication security.
  */
-export const PUBLIC_PREVIEW_MODE = true;
+export const PUBLIC_PREVIEW_MODE = false;
 
 /**
  * Checks if preview mode should be active for the current runtime.

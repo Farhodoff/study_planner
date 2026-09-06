@@ -20,8 +20,8 @@ describe('App', () => {
     expect(elements[0]).toBeInTheDocument();
   }, 15000);
 
-  it('has public preview mode configured with mock superadmin credentials', () => {
-    expect(PUBLIC_PREVIEW_MODE).toBe(true);
+  it('has public preview mode disabled by default with secure mock fallback config', () => {
+    expect(PUBLIC_PREVIEW_MODE).toBe(false);
     expect(MOCK_PREVIEW_USER.email).toBe('fsoyilov@gmail.com');
     expect(MOCK_PREVIEW_USER.user_metadata?.role).toBe('superadmin');
   });
