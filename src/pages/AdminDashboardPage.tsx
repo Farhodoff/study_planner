@@ -233,6 +233,10 @@ export default function AdminDashboardPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    userListRef.current = usersList;
+  }, [usersList]);
+
   const handleSecretTitleClick = () => {
     secretClicksRef.current += 1;
     if (secretClicksRef.current >= 5) {
@@ -412,7 +416,11 @@ export default function AdminDashboardPage() {
           id: u.id,
           email: u.email || "Noma'lum",
           full_name: u.full_name || '',
-          role: isSuperAdmin(u.email) ? 'superadmin' : u.role || 'user',
+          role: isSuperAdmin(u.email)
+            ? 'superadmin'
+            : typeof u.role === 'string'
+              ? u.role.toLowerCase()
+              : u.role || 'user',
           created_at: u.created_at || new Date().toISOString(),
           last_sign_in_at: u.last_sign_in_at || u.last_sign_in,
         }));
@@ -430,7 +438,11 @@ export default function AdminDashboardPage() {
             id: u.id,
             email: u.email || "Noma'lum",
             full_name: u.full_name || '',
-            role: isSuperAdmin(u.email) ? 'superadmin' : u.role || 'user',
+            role: isSuperAdmin(u.email)
+              ? 'superadmin'
+              : typeof u.role === 'string'
+                ? u.role.toLowerCase()
+                : u.role || 'user',
             created_at: u.created_at || new Date().toISOString(),
             last_sign_in_at: u.updated_at,
           }));
@@ -442,7 +454,12 @@ export default function AdminDashboardPage() {
 
     // Ensure current logged-in admin is included if not present
     const currentAdminEmail = user?.email;
-    if (currentAdminEmail && isAdminEmail(currentAdminEmail, user.role)) {
+    const currentAdminRoleRaw = user?.role || user?.user_metadata?.role || user?.app_metadata?.role;
+    const currentAdminRole =
+      typeof currentAdminRoleRaw === 'string'
+        ? currentAdminRoleRaw.toLowerCase()
+        : currentAdminRoleRaw;
+    if (currentAdminEmail && isAdminEmail(currentAdminEmail, currentAdminRole)) {
       const exists = loadedUsers.some(
         (u) =>
           u.email.toLowerCase() === currentAdminEmail.toLowerCase() ||
@@ -808,7 +825,7 @@ export default function AdminDashboardPage() {
 
     setSpeechRecords(combinedSpeech);
     setLoading(false);
-  }, []);
+  }, [user]);
 
   const [authEmail, setAuthEmail] = useState<string>(() => user?.email || '');
   const [authRole, setAuthRole] = useState<string | undefined>(
@@ -818,14 +835,28 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (user?.email) {
       setAuthEmail(user.email);
-      setAuthRole((user as { role?: string })?.role);
+      setAuthRole(
+        (
+          (
+            user as {
+              role?: string;
+              user_metadata?: { role?: string };
+              app_metadata?: { role?: string };
+            }
+          )?.role ||
+          (user as { user_metadata?: { role?: string } })?.user_metadata?.role ||
+          (user as { app_metadata?: { role?: string } })?.app_metadata?.role
+        )?.toLowerCase(),
+      );
     } else {
       supabase.auth
         .getUser()
         .then(({ data }) => {
           if (data?.user?.email) {
             setAuthEmail(data.user.email);
-            setAuthRole(data.user.user_metadata?.role);
+            setAuthRole(
+              (data.user.user_metadata?.role || data.user.app_metadata?.role)?.toLowerCase(),
+            );
           }
         })
         .catch(() => {});
@@ -1597,7 +1628,7 @@ export default function AdminDashboardPage() {
                       ? `${totalDurationHours}時間 ${remainingMinutes}分`
                       : `${totalDurationMinutes}分`
                     : totalDurationHours > 0
-                      ? `${totalDurationHours}s ${remainingMinutes}d`
+                      ? `${totalDurationHours} soat ${remainingMinutes} daqiqa`
                       : `${totalDurationMinutes} daqiqa`}
                 </div>
                 <div className="text-[11px] font-semibold text-muted-foreground">
