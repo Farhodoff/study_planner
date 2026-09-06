@@ -51,14 +51,20 @@ const ScenarioPickerPage = lazyWithRetry(() =>
 );
 const ProgressPage = lazyWithRetry(() => import('./pages/ProgressPage'));
 const TelegramMiniAppPage = lazyWithRetry(() => import('./pages/TelegramMiniAppPage'));
+const DashboardPage = lazyWithRetry(() => import('./pages/DashboardPage'));
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'));
 
 import { isSuperAdmin, isUserAdmin } from './utils/admin';
 import { useAuthStore } from './stores';
 import { safeLocalStorage } from './utils/storage/safeLocalStorage';
+import { isPublicPreviewActive, MOCK_PREVIEW_SESSION } from './config/previewMode';
 
 const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
+  if (isPublicPreviewActive()) {
+    return <>{children}</>;
+  }
   const cachedUser = safeLocalStorage.getJSON<any>('study_planner_user_cache', null);
   const effectiveUser = user || cachedUser;
   if (loading && !effectiveUser) {
@@ -73,6 +79,9 @@ const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
+  if (isPublicPreviewActive()) {
+    return <>{children}</>;
+  }
   const cachedUser = safeLocalStorage.getJSON<any>('study_planner_user_cache', null);
   const effectiveUser = user || cachedUser;
   if (loading && !effectiveUser) {
@@ -99,6 +108,9 @@ import UnauthRouter from './components/UnauthRouter';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(() => {
+    if (isPublicPreviewActive()) {
+      return MOCK_PREVIEW_SESSION as unknown as Session;
+    }
     if (typeof window !== 'undefined') {
       try {
         const rawUser = localStorage.getItem('study_planner_user_cache');
@@ -134,7 +146,7 @@ const App: React.FC = () => {
     }
     return null;
   });
-  const [isLoading, setIsLoading] = useState<boolean>(() => !session);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !session && !isPublicPreviewActive());
 
   useEffect(() => {
     // Safety timeout: Never leave the UI stuck on "Yuklanmoqda..."
@@ -148,12 +160,17 @@ const App: React.FC = () => {
         clearTimeout(safetyTimer);
         if (fetchedSession) {
           setSession(fetchedSession);
+        } else if (isPublicPreviewActive()) {
+          setSession(MOCK_PREVIEW_SESSION as unknown as Session);
         }
         setIsLoading(false);
       })
       .catch((err) => {
         clearTimeout(safetyTimer);
         console.warn('Session check aborted/failed:', err);
+        if (isPublicPreviewActive()) {
+          setSession(MOCK_PREVIEW_SESSION as unknown as Session);
+        }
         setIsLoading(false);
       });
 
@@ -162,6 +179,8 @@ const App: React.FC = () => {
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (newSession) {
         setSession(newSession);
+      } else if (isPublicPreviewActive()) {
+        setSession(MOCK_PREVIEW_SESSION as unknown as Session);
       }
     });
 
@@ -171,7 +190,11 @@ const App: React.FC = () => {
         (e.key.includes('auth-token') || e.key.includes('supabase.auth.token')) &&
         !e.newValue
       ) {
-        setSession(null);
+        if (isPublicPreviewActive()) {
+          setSession(MOCK_PREVIEW_SESSION as unknown as Session);
+        } else {
+          setSession(null);
+        }
       }
     };
 
@@ -196,7 +219,7 @@ const App: React.FC = () => {
     return <PageLoader />;
   }
 
-  if (!session) {
+  if (!session && !isPublicPreviewActive()) {
     return (
       <LanguageProvider>
         <UnauthRouter />
@@ -216,7 +239,8 @@ const App: React.FC = () => {
                   <Routes>
                     <Route path="/" element={<Layout />}>
                       <Route index element={<Navigate to="/jlpt" replace />} />
-                      <Route path="dashboard" element={<Navigate to="/jlpt" replace />} />
+                      <Route path="landing" element={<LandingPage />} />
+                      <Route path="dashboard" element={<DashboardPage />} />
                       <Route
                         path="admin"
                         element={
@@ -229,6 +253,7 @@ const App: React.FC = () => {
                       <Route path="personal-plan" element={<PersonalPlanPage />} />
                       <Route path="diagnostic" element={<DiagnosticPage />} />
                       <Route path="lesson/:lessonId" element={<LessonPlayerPage />} />
+                      <Route path="speaking" element={<SpeakingCoachPage />} />
                       <Route path="speaking-coach" element={<SpeakingCoachPage />} />
                       <Route
                         path="ielts"

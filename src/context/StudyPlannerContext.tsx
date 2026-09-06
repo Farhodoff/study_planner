@@ -47,6 +47,7 @@ import { isUuid } from '../utils/uuid';
 import { safeLocalStorage } from '../utils/storage/safeLocalStorage';
 import { LearningTrackStorage } from '../utils/storage/LearningTrackStorage';
 import { isSuperAdmin } from '../utils/admin';
+import { isPublicPreviewActive, MOCK_PREVIEW_USER } from '../config/previewMode';
 import {
   useAuthStore,
   useSettingsStore,
@@ -273,12 +274,17 @@ export const StudyPlannerProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const lastFetchTimeRef = useRef<number>(0);
 
   const [loading, setLoading] = useState<boolean>(() => {
+    if (isPublicPreviewActive()) return false;
     // Only show loading on cold start if there is absolutely no cached user
     const cachedUser = safeLocalStorage.getJSON<User | null>('study_planner_user_cache', null);
     return !cachedUser;
   });
   const [user, setUser] = useState<User | null>(() => {
-    return safeLocalStorage.getJSON<User | null>('study_planner_user_cache', null);
+    const cached = safeLocalStorage.getJSON<User | null>('study_planner_user_cache', null);
+    if (!cached && isPublicPreviewActive()) {
+      return MOCK_PREVIEW_USER as unknown as User;
+    }
+    return cached;
   });
 
   // Learning Focus State - Defaults to 100% Japanese ('ja') for all public users
@@ -432,6 +438,8 @@ export const StudyPlannerProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const localCached = safeLocalStorage.getJSON<User | null>('study_planner_user_cache', null);
         if (localCached && localCached.id && isUuid(localCached.id)) {
           currentUser = localCached;
+        } else if (isPublicPreviewActive()) {
+          currentUser = MOCK_PREVIEW_USER as unknown as User;
         }
       }
 
