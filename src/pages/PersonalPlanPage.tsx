@@ -467,7 +467,7 @@ export const PersonalPlanPage: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-4 duration-200 animate-in fade-in md:p-8">
+    <div className="mx-auto max-w-7xl max-w-full space-y-8 overflow-x-hidden p-3.5 duration-200 animate-in fade-in sm:p-4 md:p-8">
       {/* WIZARD FLOW */}
       {!activeGoal ? (
         <div className="mx-auto max-w-3xl space-y-8">

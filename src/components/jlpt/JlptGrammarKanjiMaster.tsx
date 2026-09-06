@@ -251,7 +251,7 @@ export const JlptGrammarKanjiMaster: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner — Sumi-e & Hanko */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-xs md:p-8">
+      <div className="relative max-w-full overflow-hidden rounded-3xl border border-border bg-card p-4 shadow-xs sm:p-6 md:p-8">
         <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div>
             <div className="badge-gold mb-3">
@@ -340,15 +340,15 @@ export const JlptGrammarKanjiMaster: React.FC = () => {
 
       {/* Level & Search Controls (for Grammar & Kanji) */}
       {activeTab !== 'quiz' && (
-        <div className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-xs">
+        <div className="max-w-full space-y-4 overflow-hidden rounded-2xl border border-border bg-card p-3.5 shadow-xs sm:p-4">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             {/* Level Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+            <div className="scrollbar-none flex max-w-full items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
               {(['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'] as const).map((lvl) => (
                 <button
                   key={lvl}
                   onClick={() => setSelectedLevel(lvl)}
-                  className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+                  className={`shrink-0 whitespace-nowrap rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
                     selectedLevel === lvl
                       ? 'bg-primary text-primary-foreground shadow-xs'
                       : 'border border-border bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -383,8 +383,8 @@ export const JlptGrammarKanjiMaster: React.FC = () => {
           {/* Mastery Filter & Progress Bar */}
           <div className="flex flex-col justify-between gap-3 border-t border-border pt-3 md:flex-row md:items-center">
             {/* Status Filter buttons */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="mr-1 font-medium text-muted-foreground">
+            <div className="flex max-w-full flex-wrap items-center gap-1.5 text-xs">
+              <span className="mr-1 shrink-0 font-medium text-muted-foreground">
                 {language === 'ja' ? '習得状況:' : 'Holat:'}
               </span>
               {(['ALL', 'mastered', 'learned', 'hard', 'unlearned'] as const).map((st) => (
@@ -520,11 +520,11 @@ export const JlptGrammarKanjiMaster: React.FC = () => {
                 </div>
 
                 {/* Status Toggle Buttons */}
-                <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs">
-                  <span className="text-muted-foreground">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs">
+                  <span className="shrink-0 text-muted-foreground">
                     {language === 'ja' ? 'おぼえかた:' : 'Mustahkamlash:'}
                   </span>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       onClick={() => setItemStatus(item.id, 'hard')}
                       className={`rounded-lg border px-2 py-1 transition ${
@@ -649,11 +649,11 @@ export const JlptGrammarKanjiMaster: React.FC = () => {
                 </div>
 
                 {/* Status Toggle Buttons */}
-                <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs">
-                  <span className="text-muted-foreground">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs">
+                  <span className="shrink-0 text-muted-foreground">
                     {language === 'ja' ? 'じょうたい:' : 'Holat:'}
                   </span>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       onClick={() => setItemStatus(item.id, 'hard')}
                       className={`rounded-lg border px-2 py-0.5 transition ${

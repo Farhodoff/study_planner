@@ -5,35 +5,35 @@
 @layer base {
   :root {
     /* Sumi-e & Hanko Light theme — Warm Washi Paper Base */
-    --background: 43 33% 96%;        /* #F8F6F0 */
-    --foreground: 214 22% 13%;       /* #1A2028 */
+    --background: 43 33% 96%; /* #F8F6F0 */
+    --foreground: 214 22% 13%; /* #1A2028 */
 
-    --card: 0 0% 100%;               /* #FFFFFF */
+    --card: 0 0% 100%; /* #FFFFFF */
     --card-foreground: 214 22% 13%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 214 22% 13%;
 
-    --primary: 6 73% 53%;            /* #DC4433 Vermillion Hanko Red */
+    --primary: 6 73% 53%; /* #DC4433 Vermillion Hanko Red */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 20% 93%;         /* #EFECE6 */
+    --secondary: 40 20% 93%; /* #EFECE6 */
     --secondary-foreground: 214 22% 13%;
 
-    --muted: 40 18% 92%;             /* #EAE7E0 */
+    --muted: 40 18% 92%; /* #EAE7E0 */
     --muted-foreground: 215 16% 47%; /* #64748B */
 
-    --accent: 6 73% 53%;             /* #DC4433 */
+    --accent: 6 73% 53%; /* #DC4433 */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;        /* #F87171 */
+    --destructive: 0 84% 60%; /* #F87171 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 14% 87%;            /* #E2DFD8 */
+    --border: 40 14% 87%; /* #E2DFD8 */
     --input: 40 14% 87%;
     --ring: 6 73% 53%;
 
-    --gold: 42 49% 58%;              /* #C9A961 */
+    --gold: 42 49% 58%; /* #C9A961 */
     --gold-foreground: 214 22% 13%;
 
     --radius: 1rem;
@@ -41,35 +41,35 @@
 
   .dark {
     /* Sumi-e & Hanko Dark theme — Deep Ink Navy/Sumi Charcoal Base */
-    --background: 210 25% 8%;        /* #0F1419 Deep Sumi Charcoal/Navy */
-    --foreground: 36 17% 95%;        /* #F5F3F0 Warm Off-White */
+    --background: 210 25% 8%; /* #0F1419 Deep Sumi Charcoal/Navy */
+    --foreground: 36 17% 95%; /* #F5F3F0 Warm Off-White */
 
-    --card: 214 22% 13%;             /* #1A2028 Elevated Ink-Slate */
-    --card-foreground: 36 17% 95%;   /* #F5F3F0 */
+    --card: 214 22% 13%; /* #1A2028 Elevated Ink-Slate */
+    --card-foreground: 36 17% 95%; /* #F5F3F0 */
 
-    --popover: 214 22% 13%;          /* #1A2028 */
+    --popover: 214 22% 13%; /* #1A2028 */
     --popover-foreground: 36 17% 95%;
 
-    --primary: 5 79% 57%;            /* #E8483A Vermillion Hanko Red */
+    --primary: 5 79% 57%; /* #E8483A Vermillion Hanko Red */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 20% 17%;        /* #222B36 */
+    --secondary: 214 20% 17%; /* #222B36 */
     --secondary-foreground: 36 17% 95%;
 
-    --muted: 214 20% 17%;            /* #222B36 */
-    --muted-foreground: 35 6% 53%;   /* #8B8680 Warm Sumi Gray */
+    --muted: 214 20% 17%; /* #222B36 */
+    --muted-foreground: 35 6% 53%; /* #8B8680 Warm Sumi Gray */
 
-    --accent: 5 79% 57%;             /* #E8483A */
+    --accent: 5 79% 57%; /* #E8483A */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;        /* #F87171 Soft Alert Rose */
+    --destructive: 0 84% 60%; /* #F87171 Soft Alert Rose */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 19%;           /* #26303B Subtle Ink Border */
+    --border: 214 20% 19%; /* #26303B Subtle Ink Border */
     --input: 214 20% 19%;
     --ring: 5 79% 57%;
 
-    --gold: 42 49% 58%;              /* #C9A961 Japanese Antique Gold */
+    --gold: 42 49% 58%; /* #C9A961 Japanese Antique Gold */
     --gold-foreground: 210 25% 8%;
   }
 }
@@ -79,7 +79,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
+    @apply bg-background font-sans text-foreground antialiased selection:bg-primary/20 selection:text-primary;
     /* Safe Area for iOS */
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
@@ -88,10 +88,21 @@
   }
 }
 
-html, body {
+html,
+body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100%;
+  overflow-x: hidden;
 }
 
 .no-select {
@@ -99,7 +110,8 @@ html, body {
   -webkit-user-select: none;
 }
 
-button, a {
+button,
+a {
   -webkit-touch-callout: none;
 }
 
@@ -113,35 +125,35 @@ button, a {
   }
 
   .glass {
-    @apply bg-card/85 backdrop-blur-xl border border-border shadow-[0_4px_30px_rgba(0,0,0,0.2)];
+    @apply border border-border bg-card/85 shadow-[0_4px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl;
   }
-  
+
   .glass-card {
-    @apply bg-card/90 backdrop-blur-md border border-border shadow-xs;
+    @apply border border-border bg-card/90 shadow-xs backdrop-blur-md;
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-rose-500 to-amber-500;
+    @apply bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 bg-clip-text text-transparent;
   }
 
   .text-gradient-hanko {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#E8483A] via-[#F87171] to-[#FBBF24];
+    @apply bg-gradient-to-r from-[#E8483A] via-[#F87171] to-[#FBBF24] bg-clip-text text-transparent;
   }
 
   .text-gradient-gold {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#FDE68A] via-[#C9A961] to-[#B8964C];
+    @apply bg-gradient-to-r from-[#FDE68A] via-[#C9A961] to-[#B8964C] bg-clip-text text-transparent;
   }
 
   .badge-hanko {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/25 shadow-xs;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary shadow-xs;
   }
 
   .badge-gold {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-500/10 text-[#C9A961] border border-[#C9A961]/30 shadow-xs;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-[#C9A961]/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-black text-[#C9A961] shadow-xs;
   }
 
   .card-sumi {
-    @apply bg-card border border-border rounded-2xl p-6 transition-all duration-200 hover:border-primary/30;
+    @apply rounded-2xl border border-border bg-card p-6 transition-all duration-200 hover:border-primary/30;
   }
 
   /* 3D Transform utilities for flashcard flip */
@@ -187,7 +199,7 @@ button, a {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/30 rounded-full;
+  @apply rounded-full bg-muted-foreground/30;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -198,9 +210,15 @@ button, a {
    Gradient text subtle shift animation (hero headline)
    -------------------------------------------------------------- */
 @keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .gradient-animate {
@@ -218,9 +236,18 @@ button, a {
    Background floating glow (hero section) – very slow
    -------------------------------------------------------------- */
 @keyframes floatGlow {
-  0% { transform: translate(-5%, -5%) scale(1); opacity: 0.4; }
-  50% { transform: translate(5%, 5%) scale(1.05); opacity: 0.2; }
-  100% { transform: translate(-5%, -5%) scale(1); opacity: 0.4; }
+  0% {
+    transform: translate(-5%, -5%) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate(5%, 5%) scale(1.05);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate(-5%, -5%) scale(1);
+    opacity: 0.4;
+  }
 }
 
 .float-glow {

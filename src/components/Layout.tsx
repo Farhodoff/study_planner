@@ -177,7 +177,7 @@ const Layout: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background font-sans text-foreground transition-colors duration-300 md:flex-row">
+    <div className="flex h-screen w-full max-w-[100vw] flex-col overflow-hidden bg-background font-sans text-foreground transition-colors duration-300 md:flex-row">
       {/* Mini Timer Overlay */}
       {focusState.isActive && location.pathname !== '/focus' && (
         <div
@@ -426,7 +426,7 @@ const Layout: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="relative flex w-full flex-1 flex-col overflow-hidden bg-background">
+      <main className="relative flex w-full max-w-full flex-1 flex-col overflow-hidden bg-background">
         <GlobalAnnouncementBanner />
         <AnimatePresence mode="wait">
           <motion.div
@@ -435,7 +435,7 @@ const Layout: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className={`w-full ${
+            className={`w-full max-w-full overflow-x-hidden ${
               isFullScreenPage
                 ? 'flex h-full flex-col overflow-hidden'
                 : 'h-full overflow-y-auto pb-24 md:pb-6'
