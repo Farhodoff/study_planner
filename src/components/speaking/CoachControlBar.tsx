@@ -96,8 +96,8 @@ export const CoachControlBar: React.FC<CoachControlBarProps> = ({
       <div className="rounded-2xl border border-border bg-card/90 p-2.5 shadow-xl backdrop-blur-2xl md:p-3">
         {/* Audio Visualizer Row — Only during live session */}
         {isLiveSession && (
-          <div className="mb-2.5 px-2">
-            <div className="mb-1.5 flex items-center justify-between">
+          <div className="mb-2 px-1 sm:mb-2.5 sm:px-2">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
               <div
                 onClick={() => {
                   if (isSpeaking && onBargeIn) {
@@ -106,15 +106,19 @@ export const CoachControlBar: React.FC<CoachControlBarProps> = ({
                     onForceStartListening();
                   }
                 }}
-                className="flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-80"
+                className="flex min-w-0 cursor-pointer items-center gap-1.5 transition-opacity hover:opacity-80 sm:gap-2"
                 title={isSpeaking ? "AI gapirishini to'xtatish" : 'Gapirish uchun bosish'}
               >
-                <span className={`h-2.5 w-2.5 rounded-full ${status.pulseColor} animate-pulse`} />
-                <span className={`text-[11px] font-bold uppercase tracking-wider ${status.color}`}>
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-full sm:h-2.5 sm:w-2.5 ${status.pulseColor} animate-pulse`}
+                />
+                <span
+                  className={`truncate text-[10px] font-bold uppercase tracking-wider sm:text-[11px] ${status.color}`}
+                >
                   {status.label}
                 </span>
               </div>
-              <span className="rounded-md border border-border bg-muted px-2 py-0.5 font-mono text-[11px] font-bold text-muted-foreground">
+              <span className="shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] font-bold text-muted-foreground sm:px-2 sm:text-[11px]">
                 {formatTimer(sessionSeconds)}
               </span>
             </div>

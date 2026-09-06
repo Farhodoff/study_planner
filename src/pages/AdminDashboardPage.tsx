@@ -46,49 +46,6 @@ interface UserRecord {
   last_sign_in_at?: string;
 }
 
-const DEFAULT_DEMO_USERS: UserRecord[] = [
-  {
-    id: 'usr-1',
-    email: 'tanaka.kenji@tokyo-tech.jp',
-    full_name: '田中 健二 (Tokyo Tech)',
-    role: 'student',
-    created_at: '2026-01-15T08:30:00Z',
-    last_sign_in_at: new Date().toISOString(),
-  },
-  {
-    id: 'usr-2',
-    email: 'sato.yuki@waseda.jp',
-    full_name: '佐藤 結衣 (Waseda Univ)',
-    role: 'student',
-    created_at: '2026-01-20T10:15:00Z',
-    last_sign_in_at: new Date().toISOString(),
-  },
-  {
-    id: 'usr-3',
-    email: 'takahashi.ren@kyodai.jp',
-    full_name: '高橋 蓮 (Kyoto Univ)',
-    role: 'student',
-    created_at: '2026-02-01T14:45:00Z',
-    last_sign_in_at: new Date().toISOString(),
-  },
-  {
-    id: 'usr-4',
-    email: 'nakamura.ai@keio.jp',
-    full_name: '中村 愛 (Keio Univ)',
-    role: 'student',
-    created_at: '2026-02-10T09:20:00Z',
-    last_sign_in_at: new Date().toISOString(),
-  },
-  {
-    id: 'usr-5',
-    email: 'admin@nihongo-talk.jp',
-    full_name: 'System Admin (管理者)',
-    role: 'admin',
-    created_at: '2025-11-01T00:00:00Z',
-    last_sign_in_at: new Date().toISOString(),
-  },
-];
-
 interface UserAggregatedStats {
   totalSessions: number;
   studySessions: number;
@@ -160,80 +117,58 @@ export default function AdminDashboardPage() {
         const cached = localStorage.getItem('study_planner_admin_users_cache');
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          // Purge any legacy demo/mock data
+          if (
+            Array.isArray(parsed) &&
+            parsed.length > 0 &&
+            !parsed.some(
+              (u: any) => u.id?.startsWith('usr-') || u.email?.includes('@tokyo-tech.jp'),
+            )
+          ) {
+            return parsed;
+          }
+          localStorage.removeItem('study_planner_admin_users_cache');
         }
       } catch {}
     }
-    return DEFAULT_DEMO_USERS;
+    return [];
   });
 
   const [dailyStats, setDailyStats] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('study_planner_admin_stats_cache');
-        if (cached) return JSON.parse(cached);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          // Purge legacy mock data if present
+          if (
+            Array.isArray(parsed) &&
+            parsed.length > 0 &&
+            !parsed.some((s: any) => s.activity_date === '2026-08-25' && s.active_users === 18)
+          ) {
+            return parsed;
+          }
+          localStorage.removeItem('study_planner_admin_stats_cache');
+        }
       } catch {}
     }
-    return [
-      {
-        activity_date: '2026-08-25',
-        active_users: 18,
-        total_sessions: 42,
-        total_duration_minutes: 380,
-      },
-      {
-        activity_date: '2026-08-26',
-        active_users: 24,
-        total_sessions: 58,
-        total_duration_minutes: 510,
-      },
-      {
-        activity_date: '2026-08-27',
-        active_users: 28,
-        total_sessions: 64,
-        total_duration_minutes: 620,
-      },
-      {
-        activity_date: '2026-08-28',
-        active_users: 35,
-        total_sessions: 82,
-        total_duration_minutes: 790,
-      },
-      {
-        activity_date: '2026-08-29',
-        active_users: 41,
-        total_sessions: 96,
-        total_duration_minutes: 940,
-      },
-      {
-        activity_date: '2026-08-30',
-        active_users: 48,
-        total_sessions: 112,
-        total_duration_minutes: 1100,
-      },
-      {
-        activity_date: '2026-08-31',
-        active_users: 54,
-        total_sessions: 130,
-        total_duration_minutes: 1250,
-      },
-    ];
+    return [];
   });
 
   const [speechRecords, setSpeechRecords] = useState<any[]>([]);
   const [userStatsMap, setUserStatsMap] = useState<Record<string, UserAggregatedStats>>({});
 
   const [dbMetrics, setDbMetrics] = useState<DatabaseResourceMetrics>({
-    flashcards: 13157,
-    studySessions: 48,
-    speakingSessions: 8,
-    speakingCoachSessions: 6,
-    aiCoachSessions: 10,
-    speakingErrors: 38,
-    speakingVocabularies: 3,
+    flashcards: 0,
+    studySessions: 0,
+    speakingSessions: 0,
+    speakingCoachSessions: 0,
+    aiCoachSessions: 0,
+    speakingErrors: 0,
+    speakingVocabularies: 0,
     diagnosticResults: 0,
     learningGoals: 0,
-    profiles: 28,
+    profiles: 0,
   });
 
   // Debounce ref to prevent realtime query storms
@@ -334,16 +269,16 @@ export default function AdminDashboardPage() {
 
     // 1. FETCH FULL DATABASE RESOURCE METRICS (10 TABLES)
     const metrics: DatabaseResourceMetrics = {
-      flashcards: 13157,
-      studySessions: 48,
-      speakingSessions: 8,
-      speakingCoachSessions: 6,
-      aiCoachSessions: 10,
-      speakingErrors: 38,
-      speakingVocabularies: 3,
+      flashcards: 0,
+      studySessions: 0,
+      speakingSessions: 0,
+      speakingCoachSessions: 0,
+      aiCoachSessions: 0,
+      speakingErrors: 0,
+      speakingVocabularies: 0,
       diagnosticResults: 0,
       learningGoals: 0,
-      profiles: 28,
+      profiles: 0,
     };
 
     try {
@@ -386,6 +321,54 @@ export default function AdminDashboardPage() {
         if (typeof mObj.learning_goals_count === 'number')
           metrics.learningGoals = mObj.learning_goals_count;
         if (typeof mObj.profiles_count === 'number') metrics.profiles = mObj.profiles_count;
+      } else {
+        // Direct table head-count fallback if RPC is unavailable
+        try {
+          const [fcRes, profRes, ssRes, spRes, scRes, aiRes, errRes, vocRes, diagRes, goalRes] =
+            await Promise.allSettled([
+              supabase.from('flashcards').select('id', { count: 'exact', head: true }),
+              supabase.from('profiles').select('id', { count: 'exact', head: true }),
+              supabase.from('study_sessions').select('id', { count: 'exact', head: true }),
+              supabase.from('speaking_sessions').select('id', { count: 'exact', head: true }),
+              supabase.from('speaking_coach_sessions').select('id', { count: 'exact', head: true }),
+              supabase.from('ai_coach_sessions').select('id', { count: 'exact', head: true }),
+              supabase.from('speaking_errors').select('id', { count: 'exact', head: true }),
+              supabase.from('speaking_vocabularies').select('id', { count: 'exact', head: true }),
+              supabase.from('diagnostic_results').select('id', { count: 'exact', head: true }),
+              supabase.from('learning_goals').select('id', { count: 'exact', head: true }),
+            ]);
+
+          if (fcRes.status === 'fulfilled' && typeof fcRes.value.count === 'number') {
+            metrics.flashcards = fcRes.value.count;
+          }
+          if (profRes.status === 'fulfilled' && typeof profRes.value.count === 'number') {
+            metrics.profiles = profRes.value.count;
+          }
+          if (ssRes.status === 'fulfilled' && typeof ssRes.value.count === 'number') {
+            metrics.studySessions = ssRes.value.count;
+          }
+          if (spRes.status === 'fulfilled' && typeof spRes.value.count === 'number') {
+            metrics.speakingSessions = spRes.value.count;
+          }
+          if (scRes.status === 'fulfilled' && typeof scRes.value.count === 'number') {
+            metrics.speakingCoachSessions = scRes.value.count;
+          }
+          if (aiRes.status === 'fulfilled' && typeof aiRes.value.count === 'number') {
+            metrics.aiCoachSessions = aiRes.value.count;
+          }
+          if (errRes.status === 'fulfilled' && typeof errRes.value.count === 'number') {
+            metrics.speakingErrors = errRes.value.count;
+          }
+          if (vocRes.status === 'fulfilled' && typeof vocRes.value.count === 'number') {
+            metrics.speakingVocabularies = vocRes.value.count;
+          }
+          if (diagRes.status === 'fulfilled' && typeof diagRes.value.count === 'number') {
+            metrics.diagnosticResults = diagRes.value.count;
+          }
+          if (goalRes.status === 'fulfilled' && typeof goalRes.value.count === 'number') {
+            metrics.learningGoals = goalRes.value.count;
+          }
+        } catch {}
       }
     } catch {}
 
@@ -457,10 +440,34 @@ export default function AdminDashboardPage() {
       newStatus.rpcUsers = { ok: false, count: 0, error: uErr?.message || 'RPC exception' };
     }
 
+    // Ensure current logged-in admin is included if not present
+    const currentAdminEmail = user?.email;
+    if (currentAdminEmail && isAdminEmail(currentAdminEmail, user.role)) {
+      const exists = loadedUsers.some(
+        (u) =>
+          u.email.toLowerCase() === currentAdminEmail.toLowerCase() ||
+          (user.id && u.id === user.id),
+      );
+      if (!exists) {
+        loadedUsers.unshift({
+          id: user.id || 'current-admin',
+          email: currentAdminEmail,
+          full_name: user.user_metadata?.full_name || 'Admin',
+          role: isSuperAdmin(currentAdminEmail) ? 'superadmin' : 'admin',
+          created_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    setUsersList(loadedUsers);
     if (loadedUsers.length > 0) {
-      setUsersList(loadedUsers);
       try {
         localStorage.setItem('study_planner_admin_users_cache', JSON.stringify(loadedUsers));
+      } catch {}
+    } else {
+      try {
+        localStorage.removeItem('study_planner_admin_users_cache');
       } catch {}
     }
 

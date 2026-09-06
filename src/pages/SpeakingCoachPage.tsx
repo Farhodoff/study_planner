@@ -1259,7 +1259,7 @@ const SpeakingCoachPage: React.FC = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [chatHistory, currentTranscript, isThinking]);
+  }, [chatHistory, isThinking]);
 
   const PERSONAS = PERSONAS_BY_LANG[language];
   const PROMPT_SUGGESTIONS = PROMPT_SUGGESTIONS_BY_LANG[language];
@@ -1387,24 +1387,22 @@ const SpeakingCoachPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="flex flex-1 flex-col gap-4 overflow-hidden">
-            {!activeScenario && (
-              <RealtimeVoiceOverlay
-                isRecording={isListening}
-                isAiSpeaking={isSpeaking}
-                audioVolume={audioVolume}
-                transcript={currentTranscript}
-                errors={liveErrors}
-                activeCefrLevel="B2"
-                activeJlptLevel={language === 'ja' ? 'N3' : undefined}
-                isHandsFree={isHandsFree}
-                onToggleHandsFree={() => setIsHandsFree((prev) => !prev)}
-                onBargeIn={handleBargeIn}
-                onToggleRecording={toggleMic}
-                onCommitNow={commitSpeechNow}
-                onSpeakText={speakText}
-              />
-            )}
+          <div className="flex flex-1 flex-col gap-2.5 overflow-hidden sm:gap-4">
+            <RealtimeVoiceOverlay
+              isRecording={isListening}
+              isAiSpeaking={isSpeaking}
+              audioVolume={audioVolume}
+              transcript={currentTranscript}
+              errors={liveErrors}
+              activeCefrLevel="B2"
+              activeJlptLevel={language === 'ja' ? 'N3' : undefined}
+              isHandsFree={isHandsFree}
+              onToggleHandsFree={() => setIsHandsFree((prev) => !prev)}
+              onBargeIn={handleBargeIn}
+              onToggleRecording={toggleMic}
+              onCommitNow={commitSpeechNow}
+              onSpeakText={speakText}
+            />
             <CoachChatArea
               chatHistory={chatHistory}
               isLiveSession={isLiveSession}

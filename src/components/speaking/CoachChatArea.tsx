@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CoachChatMessage, CoachVocabularyItem, CoachPersonaItem } from './speakingTypes';
-import { Check, Copy, Volume2, Mic, Plus, Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
+import { Check, Copy, Volume2, Plus, Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
 import { UzbekistanFlag } from '../common/FlagIcons';
 import { useLanguage } from '../../context/LanguageContext';
 import { useStudyData } from '../../context/StudyPlannerContext';
@@ -33,7 +33,7 @@ export const CoachChatArea: React.FC<CoachChatAreaProps> = ({
   chatHistory,
   isLiveSession,
   currentPersona,
-  currentTranscript,
+  currentTranscript: _currentTranscript,
   isListening,
   isThinking,
   copiedIndex,
@@ -405,21 +405,6 @@ export const CoachChatArea: React.FC<CoachChatAreaProps> = ({
           />
         );
       })()}
-
-      {/* Live Transcript Bubble */}
-      {(currentTranscript || isListening) && (
-        <div className="flex justify-end animate-in fade-in slide-in-from-bottom-2">
-          <div className="max-w-[85%] rounded-2xl rounded-tr-md border border-primary/30 bg-primary/10 p-3.5 text-foreground backdrop-blur-xl sm:max-w-[75%]">
-            <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold text-primary">
-              <Mic size={12} className="animate-pulse" />
-              <span>Eshitilmoqda...</span>
-            </div>
-            <p className="text-xs font-medium italic sm:text-sm">
-              {currentTranscript || 'Gapiring, AI sizni eshitmoqda...'}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* AI Thinking Indicator */}
       {isThinking && (
