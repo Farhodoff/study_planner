@@ -5,7 +5,10 @@ const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   'https://qmuimxnknxwarvnkpnlo.supabase.co';
 const SERVICE_ROLE = process.env.SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const rawAnon = process.env.VITE_SUPABASE_ANON_KEY;
+const ANON_KEY = (rawAnon && rawAnon !== '[SENSITIVE]' && rawAnon.length > 20)
+  ? rawAnon
+  : 'sb_publishable_6g0Ei_1Cw46e1mJLKj_1Ug_sOmhlgoI';
 
 // Reliable baseline fallback if table is newly deployed or empty
 const BASELINE_RATING = {

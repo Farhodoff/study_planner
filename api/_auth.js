@@ -4,11 +4,34 @@ const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   'https://qmuimxnknxwarvnkpnlo.supabase.co';
-export const SUPABASE_ANON_KEY =
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_6g0Ei_1Cw46e1mJLKj_1Ug_sOmhlgoI';
+
+const isValidAnonKey = (key) => {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  if (
+    trimmed === '[SENSITIVE]' ||
+    trimmed.includes('placeholder') ||
+    trimmed.includes('your_supabase') ||
+    trimmed === 'undefined' ||
+    trimmed === 'null' ||
+    trimmed === ''
+  ) {
+    return false;
+  }
+  if (trimmed.startsWith('sb_publishable_') && trimmed.length > 25) return true;
+  if (trimmed.startsWith('eyJ') && trimmed.split('.').length === 3 && trimmed.length > 50) return true;
+  return false;
+};
+
+const rawAnonKey =
   process.env.VITE_SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  'sb_publishable_6g0Ei_1Cw46e1mJLKj_1Ug_sOmhlgoI';
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+export const SUPABASE_ANON_KEY = isValidAnonKey(rawAnonKey)
+  ? rawAnonKey.trim()
+  : DEFAULT_SUPABASE_ANON_KEY;
 
 /**
  * Extract bearer token from either Fetch Request (Edge) or Node IncomingMessage (Vercel serverless)
